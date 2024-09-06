@@ -21,11 +21,20 @@ printf "\n"
 temp_header=$(mktemp)
 temp_blastdata=$(mktemp)
 
-# Add the BLAST header information for the BLAST section, formatted to align with each column
-printf "%-1s\t%-35s\t%-4s\t%-4s\t%-4s\t%-4s\t%-4s\n" "qseqid" "sseqid" "pident" "length" "qlen" "sstart" "send" > "$temp_header"
-
 # Match the query sequence to the input file using BLAST, filter for perfect matches only
-blastn -query "$1" -subject "$input_file" -task blastn-short -outfmt "6 qseqid sseqid pident length qlen sstart send" | awk '$3 == 100 && $4 == $5' >> "$temp_blastdata"
+blastn -query "$1" -subject "$input_file" -task blastn-short -outfmt "6 qseqid sseqid pident length qlen sstart send" | awk '$3 == 100 && $4 == $5' > "$temp_blastdata"
+
+# Calculate column widths based on the content of $temp_blastdata
+max_qseqid=$(awk -F'\t' '{print length($1)}' "$temp_blastdata" | sort -nr | head -n1)
+max_sseqid=$(awk -F'\t' '{print length($2)}' "$temp_blastdata" | sort -nr | head -n1)
+max_pident=$(awk -F'\t' '{print length($3)}' "$temp_blastdata" | sort -nr | head -n1)
+max_length=$(awk -F'\t' '{print length($4)}' "$temp_blastdata" | sort -nr | head -n1)
+max_qlen=$(awk -F'\t' '{print length($5)}' "$temp_blastdata" | sort -nr | head -n1)
+max_sstart=$(awk -F'\t' '{print length($6)}' "$temp_blastdata" | sort -nr | head -n1)
+max_send=$(awk -F'\t' '{print length($7)}' "$temp_blastdata" | sort -nr | head -n1)
+
+# Dynamically allocate space for each column
+printf "%-${max_qseqid}s\t%-${max_sseqid}s\t%-${max_pident}s\t%-${max_length}s\t%-${max_qlen}s\t%-${max_sstart}s\t%-${max_send}s\n" "qseqid" "sseqid" "pident" "length" "qlen" "sstart" "send" > "$temp_header"
 
 # If we got no matches, no headers, spaces, or data is added to the output file.
 # Otherwise, we need to add the header and the BLAST output data to the output file.
