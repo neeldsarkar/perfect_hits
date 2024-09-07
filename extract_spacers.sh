@@ -1,16 +1,19 @@
 #!/bin/bash
-# Make sure there are at least two input arguments - the first should be the input file name and the second should be the output file name
+# Make sure that the output file is empty before adding contents to it
+: > "$output_file"
+
+# Ensure that there are at least three input arguments - the first should be the query file, the second should be the input file, and the third should be the output file
 if [ "$#" -ne 3 ]; then
     echo "Usage: $0 <query file> <input file> <output file>"
     exit 1
 fi
 
-# Rename the objects stored in our arguments to names that make sense
+# Rename the arguments for better readability
 query_file=$1
 input_file=$2
 output_file=$3
 
-# Ignore the header line and extract the query sequence to look for in the input file
+# Extract the query sequence (ignoring the header)
 query=$(grep -v "^>" "$query_file")
 
 # Only print out perfect sequence matches, indicating the query sequence in red
@@ -20,6 +23,7 @@ printf "\n"
 # Create temporary files for the header and housing the BLAST output data for line counting
 temp_header=$(mktemp)
 temp_blastdata=$(mktemp)
+temp_bedfile=$(mktemp)
 
 # Match the query sequence to the input file using BLAST, filter for perfect matches only
 blastn -query "$1" -subject "$input_file" -task blastn-short -outfmt "6 qseqid sseqid pident length qlen sstart send" | awk '$3 == 100 && $4 == $5' > "$temp_blastdata"
@@ -49,5 +53,25 @@ fi
 # Outputs the number of matching sequences to stdout
 wc -l < "$temp_blastdata"
 
-# Deletes the temporary file
+# Extract all unique sequence IDs
+seq_ids=$(awk '{print $2}' "$temp_blastdata" | sort -u)
+
+# Create a BED file containing sseqid, sstart, and ssend from our BLAST results
+for seq_id in "$seq_ids"; do
+    awk -v id="$seq_id" '
+        BEGIN {OFS="\t"} $2 == id {
+            if (NR > 1 && $6 > prev_end) {
+                print prev_sseqid, prev_end, $6-1
+            }
+            prev_sseqid = $2
+            prev_end = $7
+        }
+    ' "$temp_blastdata"
+done
+
+# Extract the spacer sequences using seqtk
+#seqtk subseq "$input_file" "$output_file" > spacer_sequences.fasta
+# Clean up temporary file
+rm "$temp_header"
 rm "$temp_blastdata"
+rm "$temp_bedfile"
