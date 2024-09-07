@@ -60,7 +60,7 @@ wc -l < "$temp_blastdata"
 # Extract all unique sequence IDs
 seq_ids=$(awk '{print $2}' "$temp_blastdata" | sort -u)
 
-printf "Spacer Sequences\n" >> "$output_file"
+printf "Spacer Sequences\n\n" >> "$output_file"
 
 # Create a BED file containing sseqid, sstart, and ssend from our BLAST results
 for seq_id in "$seq_ids"; do

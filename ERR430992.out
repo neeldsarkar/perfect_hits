@@ -13,6 +13,7 @@ qseqid	sseqid                            	pident 	length	qlen	sstart	send
 1F	NODE_18_length_84619_cov_36.005061	100.000	28	28	20532	20559
 
 Spacer Sequences
+
 >NODE_18_length_84619_cov_36.005061:20020-20051
 AGGTCGAGGTGGGCTCGGCGGCGATGATCGAT
 >NODE_18_length_84619_cov_36.005061:20080-20111
